@@ -20,13 +20,17 @@
   @media(max-width:520px){.row{grid-template-columns:1fr}}
   label{display:block;font-size:.8rem;color:var(--mut);margin-bottom:4px}
   select{width:100%;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit}
-  #play{width:100%;margin-top:16px;padding:14px;border:0;border-radius:14px;color:#fff;font:inherit;font-size:1.1rem;font-weight:700;cursor:pointer;background:linear-gradient(90deg,var(--a1),var(--a2))}
+  .btns{display:flex;gap:8px;margin-top:16px}
+  #play{flex:1;padding:14px;border:0;border-radius:14px;color:#fff;font:inherit;font-size:1.1rem;font-weight:700;cursor:pointer;background:linear-gradient(90deg,var(--a1),var(--a2))}
   #play:disabled{opacity:.6;cursor:wait}
+  #stop{padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--txt);font:inherit;cursor:pointer}
   #msg{text-align:center;margin-top:12px;font-size:.9rem;color:var(--mut);min-height:1.4em}
   #msg.err{color:var(--err)} #msg.ok{color:var(--ok)}
   #out{display:none;margin-top:14px}
   audio{width:100%}
-  #dl{display:block;width:100%;margin-top:8px;padding:11px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--txt);font:inherit;cursor:pointer}
+  #dl{padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--txt);font:inherit;cursor:pointer}
+  #dl:disabled{opacity:.6;cursor:wait}
+  .note{font-size:.78rem;color:var(--mut);text-align:center;margin-top:14px}
 </style>
 </head>
 <body>
@@ -40,117 +44,184 @@
     <div class="row">
       <div>
         <label for="dialect">اللهجة / اللغة</label>
-        <select id="dialect">
-          <optgroup label="عربي">
-            <option value="Egyptian Arabic dialect">مصري</option>
-            <option value="Saudi Arabic dialect (Najdi/Hejazi, Saudi Arabia)">سعودي</option>
-            <option value="Gulf Arabic dialect (Emirati/Kuwaiti/Qatari)">خليجي</option>
-            <option value="Levantine Arabic dialect (Syrian/Lebanese/Palestinian/Jordanian)">شامي</option>
-            <option value="Iraqi Arabic dialect">عراقي</option>
-            <option value="Yemeni Arabic dialect">يمني</option>
-            <option value="Sudanese Arabic dialect">سوداني</option>
-            <option value="Libyan Arabic dialect">ليبي</option>
-            <option value="Moroccan Arabic (Darija)">مغربي</option>
-            <option value="Algerian Arabic dialect">جزائري</option>
-            <option value="Tunisian Arabic dialect">تونسي</option>
-            <option value="Modern Standard Arabic (Fusha)">فصحى</option>
-          </optgroup>
-          <optgroup label="لغات تانية">
-            <option value="American English">English</option>
-            <option value="British English">English (UK)</option>
-            <option value="Castilian Spanish">Español</option>
-            <option value="Parisian French">Français</option>
-            <option value="German">Deutsch</option>
-            <option value="Italian">Italiano</option>
-            <option value="Brazilian Portuguese">Português</option>
-            <option value="Turkish">Türkçe</option>
-            <option value="Russian">Русский</option>
-            <option value="Hindi">हिन्दी</option>
-            <option value="Urdu">اردو</option>
-            <option value="Japanese">日本語</option>
-            <option value="Korean">한국어</option>
-            <option value="Mandarin Chinese">中文</option>
-          </optgroup>
-        </select>
+        <select id="dialect"></select>
       </div>
       <div>
-        <label for="voice">الصوت</label>
-        <select id="voice">
-          <optgroup label="أنثى">
-            <option value="21m00Tcm4TlvDq8ikWAM">أنثى - هادية</option>
-            <option value="EXAVITQu4vr4xnSDxMzL">أنثى - ناعمة</option>
-            <option value="AZnzlk1XvdvUeBnXmlld">أنثى - حيوية</option>
-          </optgroup>
-          <optgroup label="ذكر">
-            <option value="pNInz6obpgDQGcFmaJgB">ذكر - عميق</option>
-            <option value="ErXwobaYiN019PkySvjV">ذكر - دافي</option>
-            <option value="TxGEqnHWrfWFTfGW9XjX">ذكر - شبابي</option>
-          </optgroup>
+        <label for="gender">الصوت</label>
+        <select id="gender">
+          <option value="F">أنثى</option>
+          <option value="M">ذكر</option>
         </select>
       </div>
     </div>
 
-    <button id="play">▶ حوّل لصوت</button>
+    <div class="btns">
+      <button id="play">▶ حوّل لصوت</button>
+      <button id="stop" title="إيقاف">⏹</button>
+      <button id="dl" title="تحميل MP3">⬇ MP3</button>
+    </div>
     <div id="msg"></div>
     <div id="out">
       <audio id="player" controls></audio>
-      <button id="dl">⬇ تحميل MP3</button>
     </div>
   </div>
+  <p class="note">لأفضل جودة افتح الموقع من Microsoft Edge.</p>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
-let lastUrl = null;
 function say(t, c = '') { const m = $('msg'); m.textContent = t; m.className = c; }
+
+// label, Edge/Azure locale, description used by the AI fallback
+const LANGS = [
+  ['عربي', [
+    ['مصري','ar-EG','Egyptian Arabic dialect'],
+    ['سعودي','ar-SA','Saudi Arabic dialect (Najdi/Hejazi)'],
+    ['إماراتي','ar-AE','Emirati Arabic dialect'],
+    ['كويتي','ar-KW','Kuwaiti Arabic dialect'],
+    ['قطري','ar-QA','Qatari Arabic dialect'],
+    ['بحريني','ar-BH','Bahraini Arabic dialect'],
+    ['عماني','ar-OM','Omani Arabic dialect'],
+    ['أردني','ar-JO','Jordanian Arabic dialect'],
+    ['لبناني','ar-LB','Lebanese Arabic dialect'],
+    ['سوري','ar-SY','Syrian Arabic dialect'],
+    ['عراقي','ar-IQ','Iraqi Arabic dialect'],
+    ['يمني','ar-YE','Yemeni Arabic dialect'],
+    ['ليبي','ar-LY','Libyan Arabic dialect'],
+    ['تونسي','ar-TN','Tunisian Arabic dialect'],
+    ['جزائري','ar-DZ','Algerian Arabic dialect'],
+    ['مغربي','ar-MA','Moroccan Arabic (Darija)'],
+    ['سوداني','ar-EG','Sudanese Arabic dialect'],
+    ['فصحى','ar-SA','Modern Standard Arabic (Fusha)']
+  ]],
+  ['لغات تانية', [
+    ['English (US)','en-US','American English'],
+    ['English (UK)','en-GB','British English'],
+    ['Español','es-ES','Castilian Spanish'],
+    ['Français','fr-FR','Parisian French'],
+    ['Deutsch','de-DE','German'],
+    ['Italiano','it-IT','Italian'],
+    ['Português','pt-BR','Brazilian Portuguese'],
+    ['Türkçe','tr-TR','Turkish'],
+    ['Русский','ru-RU','Russian'],
+    ['हिन्दी','hi-IN','Hindi'],
+    ['اردو','ur-PK','Urdu'],
+    ['日本語','ja-JP','Japanese'],
+    ['한국어','ko-KR','Korean'],
+    ['中文','zh-CN','Mandarin Chinese']
+  ]]
+];
+const FLAT = [];
+LANGS.forEach(([g, items]) => {
+  const og = document.createElement('optgroup'); og.label = g;
+  items.forEach(it => { og.appendChild(new Option(it[0], FLAT.length)); FLAT.push(it); });
+  $('dialect').appendChild(og);
+});
+
+const FEMALE = /Salma|Zariyah|Fatima|Laila|Amina|Rana|Sana|Noura|Layla|Iman|Mouna|Aysha|Amal|Amany|Reem|Maryam|Aria|Jenny|Sonia|Libby|Elvira|Denise|Katja|Elsa|Francisca|Nanami|SunHi|Xiaoxiao|Xiaoyi|Swara|Emel|Svetlana|Dariya|Ana|Isabella|Brenda|Yunxia|Sapna|Hyunsu|Ghada|Zira|Hedda|Helena|Heami/i;
+
+let voices = [];
+function loadVoices() { voices = ('speechSynthesis' in window) ? speechSynthesis.getVoices() : []; }
+loadVoices();
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = loadVoices;
+
+function pickNatural(locale, gender) {
+  const loc = locale.toLowerCase();
+  const list = voices.filter(v => v.lang.replace('_', '-').toLowerCase() === loc && /Natural|Online/i.test(v.name));
+  if (!list.length) return null;
+  return list.find(v => (FEMALE.test(v.name) ? 'F' : 'M') === gender) || list[0];
+}
+
+let lastUrl = null, currentUtter = null;
+
+function stopAll() {
+  try { speechSynthesis.cancel(); } catch (e) {}
+  $('player').pause();
+}
+
+function speakNatural(text, voice) {
+  return new Promise((res, rej) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = voice; u.lang = voice.lang; u.rate = 1; u.pitch = 1;
+    u.onend = res; u.onerror = e => (e.error === 'canceled' || e.error === 'interrupted') ? res() : rej(e);
+    currentUtter = u; speechSynthesis.speak(u);
+  });
+}
+
+let lastKey = null;
+const keyNow = () => $('text').value.trim() + '|' + $('dialect').value + '|' + $('gender').value;
+
+async function speakAI(text, dialectDesc, gender, autoplay = true) {
+  const clean = text.replace(/\s*\n+\s*/g, ' ').replace(/\.{2,}|…/g, '،').replace(/\s{2,}/g, ' ');
+  let spoken = clean;
+  try {
+    say('بكتب النص باللهجة...');
+    const r = await puter.ai.chat(
+      `Rewrite the following text so it is spoken naturally in ${dialectDesc}, the way a real native person talks in everyday conversation. ` +
+      `If it is already in that dialect or language, keep it almost unchanged. Keep the meaning. Use natural short phrases and normal punctuation so it flows. ` +
+      `Output ONLY the final text, nothing else.\n\nText:\n${clean}`, { model: 'gpt-4o-mini' });
+    const t = typeof r === 'string' ? r : (r?.message?.content?.[0]?.text ?? r?.message?.content ?? '');
+    if (typeof t === 'string' && t.trim()) spoken = t.trim();
+  } catch (e) { console.warn('rewrite skipped', e); }
+
+  say('بحوّل لصوت... (أول مرة ممكن يطلب تسجيل دخول مجاني من Puter)');
+  const voice = gender === 'F' ? '21m00Tcm4TlvDq8ikWAM' : 'pNInz6obpgDQGcFmaJgB';
+  const speak = model => puter.ai.txt2speech(spoken, { provider: 'elevenlabs', model, voice });
+  let audio;
+  try { audio = await speak('eleven_v3'); }
+  catch (e) { console.warn('v3 failed', e); audio = await speak('eleven_multilingual_v2'); }
+  lastUrl = audio.src; lastKey = keyNow();
+  if (autoplay) {
+    $('player').src = lastUrl;
+    $('out').style.display = 'block';
+    await $('player').play();
+  }
+}
 
 $('play').onclick = async () => {
   const text = $('text').value.trim();
   if (!text) { say('اكتب نص الأول', 'err'); return; }
-  $('play').disabled = true; $('out').style.display = 'none';
-  say('جاري توليد الصوت... (أول مرة ممكن يطلب تسجيل دخول مجاني من Puter)');
+  stopAll(); loadVoices();
+  $('out').style.display = 'none';
+  $('play').disabled = true;
+  const [, locale, desc] = FLAT[$('dialect').value];
+  const gender = $('gender').value;
   try {
-    // سطور جديدة و"..." بتعمل سكتات طويلة، فبنحوّلها لمسافات وفواصل عادية
-    const clean = text.replace(/\s*\n+\s*/g, ' ').replace(/\.{2,}|…/g, '،').replace(/\s{2,}/g, ' ');
-    // 1) نكتب النص باللهجة المطلوبة بأسلوب كلام طبيعي (ElevenLabs بينطق حسب الكتابة)
-    let spoken = clean;
-    try {
-      say('بكتب النص باللهجة...');
-      const r = await puter.ai.chat(
-        `Rewrite the following text so it is spoken naturally in ${$('dialect').value}, the way a real native person talks in everyday conversation. ` +
-        `If it is already in that dialect or language, keep it almost unchanged. Keep the meaning. Use natural short phrases and normal punctuation (commas and periods) so it flows. ` +
-        `Output ONLY the final text, nothing else.\n\nText:\n${clean}`,
-        { model: 'gpt-4o-mini' }
-      );
-      const t = typeof r === 'string' ? r : (r?.message?.content?.[0]?.text ?? r?.message?.content ?? '');
-      if (typeof t === 'string' && t.trim()) spoken = t.trim();
-    } catch (e) { console.warn('rewrite skipped', e); }
-
-    // 2) صوت بشري عالي الجودة من ElevenLabs
-    say('بحوّل لصوت...');
-    const speak = model => puter.ai.txt2speech(spoken, { provider: 'elevenlabs', model, voice: $('voice').value });
-    let audio;
-    try { audio = await speak('eleven_v3'); }
-    catch (e) { console.warn('v3 failed, falling back', e); audio = await speak('eleven_multilingual_v2'); }
-    lastUrl = audio.src;
-    $('player').src = lastUrl;
-    $('out').style.display = 'block';
-    await $('player').play();
+    const v = pickNatural(locale, gender);
+    if (v) {
+      say('جاري القراءة بصوت ' + v.name.replace(/Microsoft |Online \(Natural\) - /g, '') + '...');
+      await speakNatural(text.replace(/\s*\n+\s*/g, ' '), v);
+    } else {
+      await speakAI(text, desc, gender);
+    }
     say('تم ✔', 'ok');
   } catch (e) {
     console.error(e);
-    say('حصلت مشكلة: ' + (e?.message || e?.error?.message || 'جرب تاني'), 'err');
+    say('حصلت مشكلة: ' + (e?.message || e?.error?.message || e?.error || 'جرب تاني'), 'err');
   } finally { $('play').disabled = false; }
 };
 
+$('stop').onclick = () => { stopAll(); say(''); $('play').disabled = false; };
+
 $('dl').onclick = async () => {
-  if (!lastUrl) return;
+  const text = $('text').value.trim();
+  if (!text) { say('اكتب نص الأول', 'err'); return; }
+  $('dl').disabled = true;
   try {
+    if (!lastUrl || lastKey !== keyNow()) {
+      const [, , desc] = FLAT[$('dialect').value];
+      await speakAI(text, desc, $('gender').value, false);
+    }
+    say('بنزّل الملف...');
     const b = await (await fetch(lastUrl)).blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b); a.download = 'rabed-voiceover.mp3'; a.click();
     URL.revokeObjectURL(a.href);
-  } catch (e) { say('كليك يمين على المشغل واختار Save audio as', 'err'); }
+    say('تم التحميل ✔ (جاهز تحطه في كاب كات)', 'ok');
+  } catch (e) {
+    console.error(e);
+    say('مقدرتش أجهّز الملف: ' + (e?.message || e?.error?.message || 'جرب تاني'), 'err');
+  } finally { $('dl').disabled = false; }
 };
 </script>
 </body>
