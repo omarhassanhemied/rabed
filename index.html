@@ -77,14 +77,14 @@
         <label for="voice">الصوت</label>
         <select id="voice">
           <optgroup label="أنثى">
-            <option value="coral">أنثى - دافية</option>
-            <option value="nova">أنثى - حيوية</option>
-            <option value="shimmer">أنثى - ناعمة</option>
+            <option value="21m00Tcm4TlvDq8ikWAM">أنثى - هادية</option>
+            <option value="EXAVITQu4vr4xnSDxMzL">أنثى - ناعمة</option>
+            <option value="AZnzlk1XvdvUeBnXmlld">أنثى - حيوية</option>
           </optgroup>
           <optgroup label="ذكر">
-            <option value="onyx">ذكر - عميق</option>
-            <option value="echo">ذكر - هادي</option>
-            <option value="ash">ذكر - شبابي</option>
+            <option value="pNInz6obpgDQGcFmaJgB">ذكر - عميق</option>
+            <option value="ErXwobaYiN019PkySvjV">ذكر - دافي</option>
+            <option value="TxGEqnHWrfWFTfGW9XjX">ذكر - شبابي</option>
           </optgroup>
         </select>
       </div>
@@ -110,12 +110,28 @@ $('play').onclick = async () => {
   $('play').disabled = true; $('out').style.display = 'none';
   say('جاري توليد الصوت... (أول مرة ممكن يطلب تسجيل دخول مجاني من Puter)');
   try {
-    const audio = await puter.ai.txt2speech(text, {
-      provider: 'openai',
-      model: 'gpt-4o-mini-tts',
-      voice: $('voice').value,
-      instructions: `Speak the text in ${$('dialect').value}, with authentic native pronunciation, natural rhythm and intonation.`
-    });
+    // سطور جديدة و"..." بتعمل سكتات طويلة، فبنحوّلها لمسافات وفواصل عادية
+    const clean = text.replace(/\s*\n+\s*/g, ' ').replace(/\.{2,}|…/g, '،').replace(/\s{2,}/g, ' ');
+    // 1) نكتب النص باللهجة المطلوبة بأسلوب كلام طبيعي (ElevenLabs بينطق حسب الكتابة)
+    let spoken = clean;
+    try {
+      say('بكتب النص باللهجة...');
+      const r = await puter.ai.chat(
+        `Rewrite the following text so it is spoken naturally in ${$('dialect').value}, the way a real native person talks in everyday conversation. ` +
+        `If it is already in that dialect or language, keep it almost unchanged. Keep the meaning. Use natural short phrases and normal punctuation (commas and periods) so it flows. ` +
+        `Output ONLY the final text, nothing else.\n\nText:\n${clean}`,
+        { model: 'gpt-4o-mini' }
+      );
+      const t = typeof r === 'string' ? r : (r?.message?.content?.[0]?.text ?? r?.message?.content ?? '');
+      if (typeof t === 'string' && t.trim()) spoken = t.trim();
+    } catch (e) { console.warn('rewrite skipped', e); }
+
+    // 2) صوت بشري عالي الجودة من ElevenLabs
+    say('بحوّل لصوت...');
+    const speak = model => puter.ai.txt2speech(spoken, { provider: 'elevenlabs', model, voice: $('voice').value });
+    let audio;
+    try { audio = await speak('eleven_v3'); }
+    catch (e) { console.warn('v3 failed, falling back', e); audio = await speak('eleven_multilingual_v2'); }
     lastUrl = audio.src;
     $('player').src = lastUrl;
     $('out').style.display = 'block';
