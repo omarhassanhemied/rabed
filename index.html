@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>رابض - فويس أوفر بكل اللهجات</title>
-<script src="https://js.puter.com/v2/"></script>
 <style>
   :root{--bg:#f7f5fc;--card:#fff;--line:#e3def2;--txt:#1d1936;--mut:#7a7596;--a1:#7c3aed;--a2:#db2777;--err:#e11d48;--ok:#059669}
   @media (prefers-color-scheme:dark){:root{--bg:#120f22;--card:#1b1731;--line:#2e2850;--txt:#f1eefc;--mut:#a29cc4}}
@@ -22,15 +21,12 @@
   select{width:100%;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit}
   .btns{display:flex;gap:8px;margin-top:16px}
   #play{flex:1;padding:14px;border:0;border-radius:14px;color:#fff;font:inherit;font-size:1.1rem;font-weight:700;cursor:pointer;background:linear-gradient(90deg,var(--a1),var(--a2))}
-  #play:disabled{opacity:.6;cursor:wait}
-  #stop{padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--txt);font:inherit;cursor:pointer}
+  #dl{padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--txt);font:inherit;cursor:pointer}
+  button:disabled{opacity:.55;cursor:wait}
   #msg{text-align:center;margin-top:12px;font-size:.9rem;color:var(--mut);min-height:1.4em}
   #msg.err{color:var(--err)} #msg.ok{color:var(--ok)}
   #out{display:none;margin-top:14px}
   audio{width:100%}
-  #dl{padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--txt);font:inherit;cursor:pointer}
-  #dl:disabled{opacity:.6;cursor:wait}
-  .note{font-size:.78rem;color:var(--mut);text-align:center;margin-top:14px}
 </style>
 </head>
 <body>
@@ -39,7 +35,7 @@
   <p class="sub">اكتب النص، اختار اللهجة والصوت، واسمعه.</p>
 
   <div class="card">
-    <textarea id="text" placeholder="اكتب النص هنا...">أهلاً بيكم! ده تجربة فويس أوفر بصوت طبيعي وبلهجة مصرية.</textarea>
+    <textarea id="text" placeholder="اكتب النص هنا...">هلا والله ومرحبا فيكم! كيف حالكم يا جماعة؟ اليوم بشرح لكم شي بسيط وحلو، بس ركزوا معي زين.</textarea>
 
     <div class="row">
       <div>
@@ -47,68 +43,68 @@
         <select id="dialect"></select>
       </div>
       <div>
-        <label for="gender">الصوت</label>
-        <select id="gender">
-          <option value="F">أنثى</option>
-          <option value="M">ذكر</option>
+        <label for="voice">الصوت</label>
+        <select id="voice">
+          <optgroup label="أنثى">
+            <option value="Kore">أنثى - واضحة</option>
+            <option value="Aoede">أنثى - دافية</option>
+            <option value="Leda">أنثى - شابة</option>
+          </optgroup>
+          <optgroup label="ذكر">
+            <option value="Charon">ذكر - هادي</option>
+            <option value="Orus">ذكر - قوي</option>
+            <option value="Puck">ذكر - حيوي</option>
+          </optgroup>
         </select>
       </div>
     </div>
 
     <div class="btns">
       <button id="play">▶ حوّل لصوت</button>
-      <button id="stop" title="إيقاف">⏹</button>
-      <button id="dl" title="تحميل MP3">⬇ MP3</button>
+      <button id="dl" disabled>⬇ تحميل</button>
     </div>
     <div id="msg"></div>
-    <div id="out">
-      <audio id="player" controls></audio>
-    </div>
+    <div id="out"><audio id="player" controls></audio></div>
   </div>
-  <p class="note">لأفضل جودة افتح الموقع من Microsoft Edge.</p>
 </main>
 
 <script>
+// رابط الـ Worker على Cloudflare (المفتاح محفوظ هناك مش في الكود)
+const WORKER_URL = 'https://billowing-snow-10f5rabed-voice.omarhassanhemied.workers.dev/';
+
 const $ = id => document.getElementById(id);
 function say(t, c = '') { const m = $('msg'); m.textContent = t; m.className = c; }
 
-// label, Edge/Azure locale, description used by the AI fallback
 const LANGS = [
   ['عربي', [
-    ['مصري','ar-EG','Egyptian Arabic dialect'],
-    ['سعودي','ar-SA','Saudi Arabic dialect (Najdi/Hejazi)'],
-    ['إماراتي','ar-AE','Emirati Arabic dialect'],
-    ['كويتي','ar-KW','Kuwaiti Arabic dialect'],
-    ['قطري','ar-QA','Qatari Arabic dialect'],
-    ['بحريني','ar-BH','Bahraini Arabic dialect'],
-    ['عماني','ar-OM','Omani Arabic dialect'],
-    ['أردني','ar-JO','Jordanian Arabic dialect'],
-    ['لبناني','ar-LB','Lebanese Arabic dialect'],
-    ['سوري','ar-SY','Syrian Arabic dialect'],
-    ['عراقي','ar-IQ','Iraqi Arabic dialect'],
-    ['يمني','ar-YE','Yemeni Arabic dialect'],
-    ['ليبي','ar-LY','Libyan Arabic dialect'],
-    ['تونسي','ar-TN','Tunisian Arabic dialect'],
-    ['جزائري','ar-DZ','Algerian Arabic dialect'],
-    ['مغربي','ar-MA','Moroccan Arabic (Darija)'],
-    ['سوداني','ar-EG','Sudanese Arabic dialect'],
-    ['فصحى','ar-SA','Modern Standard Arabic (Fusha)']
+    ['مصري', 'Egyptian Arabic dialect'],
+    ['سعودي', 'Saudi Arabic dialect (Najdi/Hejazi, Saudi Arabia)'],
+    ['خليجي', 'Gulf Arabic dialect (Emirati/Kuwaiti/Qatari)'],
+    ['شامي', 'Levantine Arabic dialect (Syrian/Lebanese/Palestinian/Jordanian)'],
+    ['عراقي', 'Iraqi Arabic dialect'],
+    ['يمني', 'Yemeni Arabic dialect'],
+    ['سوداني', 'Sudanese Arabic dialect'],
+    ['ليبي', 'Libyan Arabic dialect'],
+    ['تونسي', 'Tunisian Arabic dialect'],
+    ['جزائري', 'Algerian Arabic dialect'],
+    ['مغربي', 'Moroccan Arabic (Darija)'],
+    ['فصحى', 'Modern Standard Arabic (Fusha)']
   ]],
   ['لغات تانية', [
-    ['English (US)','en-US','American English'],
-    ['English (UK)','en-GB','British English'],
-    ['Español','es-ES','Castilian Spanish'],
-    ['Français','fr-FR','Parisian French'],
-    ['Deutsch','de-DE','German'],
-    ['Italiano','it-IT','Italian'],
-    ['Português','pt-BR','Brazilian Portuguese'],
-    ['Türkçe','tr-TR','Turkish'],
-    ['Русский','ru-RU','Russian'],
-    ['हिन्दी','hi-IN','Hindi'],
-    ['اردو','ur-PK','Urdu'],
-    ['日本語','ja-JP','Japanese'],
-    ['한국어','ko-KR','Korean'],
-    ['中文','zh-CN','Mandarin Chinese']
+    ['English (US)', 'American English'],
+    ['English (UK)', 'British English'],
+    ['Español', 'Castilian Spanish'],
+    ['Français', 'Parisian French'],
+    ['Deutsch', 'German'],
+    ['Italiano', 'Italian'],
+    ['Português', 'Brazilian Portuguese'],
+    ['Türkçe', 'Turkish'],
+    ['Русский', 'Russian'],
+    ['हिन्दी', 'Hindi'],
+    ['اردو', 'Urdu'],
+    ['日本語', 'Japanese'],
+    ['한국어', 'Korean'],
+    ['中文', 'Mandarin Chinese']
   ]]
 ];
 const FLAT = [];
@@ -118,110 +114,79 @@ LANGS.forEach(([g, items]) => {
   $('dialect').appendChild(og);
 });
 
-const FEMALE = /Salma|Zariyah|Fatima|Laila|Amina|Rana|Sana|Noura|Layla|Iman|Mouna|Aysha|Amal|Amany|Reem|Maryam|Aria|Jenny|Sonia|Libby|Elvira|Denise|Katja|Elsa|Francisca|Nanami|SunHi|Xiaoxiao|Xiaoyi|Swara|Emel|Svetlana|Dariya|Ana|Isabella|Brenda|Yunxia|Sapna|Hyunsu|Ghada|Zira|Hedda|Helena|Heami/i;
-
-let voices = [];
-function loadVoices() { voices = ('speechSynthesis' in window) ? speechSynthesis.getVoices() : []; }
-loadVoices();
-if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = loadVoices;
-
-function pickNatural(locale, gender) {
-  const loc = locale.toLowerCase();
-  const list = voices.filter(v => v.lang.replace('_', '-').toLowerCase() === loc && /Natural|Online/i.test(v.name));
-  if (!list.length) return null;
-  return list.find(v => (FEMALE.test(v.name) ? 'F' : 'M') === gender) || list[0];
-}
-
-let lastUrl = null, currentUtter = null;
-
-function stopAll() {
-  try { speechSynthesis.cancel(); } catch (e) {}
-  $('player').pause();
-}
-
-function speakNatural(text, voice) {
-  return new Promise((res, rej) => {
-    const u = new SpeechSynthesisUtterance(text);
-    u.voice = voice; u.lang = voice.lang; u.rate = 1; u.pitch = 1;
-    u.onend = res; u.onerror = e => (e.error === 'canceled' || e.error === 'interrupted') ? res() : rej(e);
-    currentUtter = u; speechSynthesis.speak(u);
-  });
-}
-
-let lastKey = null;
-const keyNow = () => $('text').value.trim() + '|' + $('dialect').value + '|' + $('gender').value;
-
-async function speakAI(text, dialectDesc, gender, autoplay = true) {
-  const clean = text.replace(/\s*\n+\s*/g, ' ').replace(/\.{2,}|…/g, '،').replace(/\s{2,}/g, ' ');
-  let spoken = clean;
-  try {
-    say('بكتب النص باللهجة...');
-    const r = await puter.ai.chat(
-      `Rewrite the following text so it is spoken naturally in ${dialectDesc}, the way a real native person talks in everyday conversation. ` +
-      `If it is already in that dialect or language, keep it almost unchanged. Keep the meaning. Use natural short phrases and normal punctuation so it flows. ` +
-      `Output ONLY the final text, nothing else.\n\nText:\n${clean}`, { model: 'gpt-4o-mini' });
-    const t = typeof r === 'string' ? r : (r?.message?.content?.[0]?.text ?? r?.message?.content ?? '');
-    if (typeof t === 'string' && t.trim()) spoken = t.trim();
-  } catch (e) { console.warn('rewrite skipped', e); }
-
-  say('بحوّل لصوت... (أول مرة ممكن يطلب تسجيل دخول مجاني من Puter)');
-  const voice = gender === 'F' ? '21m00Tcm4TlvDq8ikWAM' : 'pNInz6obpgDQGcFmaJgB';
-  const speak = model => puter.ai.txt2speech(spoken, { provider: 'elevenlabs', model, voice });
-  let audio;
-  try { audio = await speak('eleven_v3'); }
-  catch (e) { console.warn('v3 failed', e); audio = await speak('eleven_multilingual_v2'); }
-  lastUrl = audio.src; lastKey = keyNow();
-  if (autoplay) {
-    $('player').src = lastUrl;
-    $('out').style.display = 'block';
-    await $('player').play();
+// تقسيم النص الطويل لأجزاء على حدود الجمل
+function chunk(text, max = 900) {
+  const sentences = text.match(/[^.!؟?،,\n]+[.!؟?،,\n]*/g) || [text];
+  const out = []; let cur = '';
+  for (const s of sentences) {
+    if ((cur + s).length > max && cur) { out.push(cur.trim()); cur = ''; }
+    cur += s;
   }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
 }
+
+const b64ToBytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+function pcmToWav(pcm, rate = 24000) {
+  const h = new ArrayBuffer(44), v = new DataView(h);
+  const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0, 'RIFF'); v.setUint32(4, 36 + pcm.length, true); w(8, 'WAVE'); w(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, 'data'); v.setUint32(40, pcm.length, true);
+  return new Blob([h, pcm], { type: 'audio/wav' });
+}
+
+async function tts(text, desc, voice) {
+  if (WORKER_URL.startsWith('PASTE')) throw new Error('الموقع لسه مش متوصل بالسيرفر');
+  const res = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, desc, voice })
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error('الحصة المجانية مؤقتًا خلصت، جرب بعد دقيقة');
+    throw new Error('خطأ في السيرفر (' + res.status + ')');
+  }
+  const data = await res.json();
+  if (!data.audio) throw new Error('ما رجعش صوت، جرب نص تاني');
+  return b64ToBytes(data.audio);
+}
+
+let wavUrl = null;
 
 $('play').onclick = async () => {
-  const text = $('text').value.trim();
+  const text = $('text').value.trim().replace(/\s*\n+\s*/g, ' ');
   if (!text) { say('اكتب نص الأول', 'err'); return; }
-  stopAll(); loadVoices();
-  $('out').style.display = 'none';
-  $('play').disabled = true;
-  const [, locale, desc] = FLAT[$('dialect').value];
-  const gender = $('gender').value;
+  $('play').disabled = true; $('dl').disabled = true; $('out').style.display = 'none';
   try {
-    const v = pickNatural(locale, gender);
-    if (v) {
-      say('جاري القراءة بصوت ' + v.name.replace(/Microsoft |Online \(Natural\) - /g, '') + '...');
-      await speakNatural(text.replace(/\s*\n+\s*/g, ' '), v);
-    } else {
-      await speakAI(text, desc, gender);
+    const [, desc] = FLAT[$('dialect').value];
+    const parts = chunk(text);
+    const pcms = [];
+    for (let i = 0; i < parts.length; i++) {
+      say(parts.length > 1 ? `جاري التوليد... (${i + 1}/${parts.length})` : 'جاري التوليد...');
+      pcms.push(await tts(parts[i], desc, $('voice').value));
     }
+    const total = pcms.reduce((n, p) => n + p.length, 0);
+    const all = new Uint8Array(total); let o = 0;
+    pcms.forEach(p => { all.set(p, o); o += p.length; });
+    if (wavUrl) URL.revokeObjectURL(wavUrl);
+    wavUrl = URL.createObjectURL(pcmToWav(all));
+    $('player').src = wavUrl; $('out').style.display = 'block'; $('dl').disabled = false;
+    await $('player').play().catch(() => {});
     say('تم ✔', 'ok');
   } catch (e) {
     console.error(e);
-    say('حصلت مشكلة: ' + (e?.message || e?.error?.message || e?.error || 'جرب تاني'), 'err');
+    say('حصلت مشكلة: ' + (e.message || 'جرب تاني'), 'err');
   } finally { $('play').disabled = false; }
 };
 
-$('stop').onclick = () => { stopAll(); say(''); $('play').disabled = false; };
-
-$('dl').onclick = async () => {
-  const text = $('text').value.trim();
-  if (!text) { say('اكتب نص الأول', 'err'); return; }
-  $('dl').disabled = true;
-  try {
-    if (!lastUrl || lastKey !== keyNow()) {
-      const [, , desc] = FLAT[$('dialect').value];
-      await speakAI(text, desc, $('gender').value, false);
-    }
-    say('بنزّل الملف...');
-    const b = await (await fetch(lastUrl)).blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(b); a.download = 'rabed-voiceover.mp3'; a.click();
-    URL.revokeObjectURL(a.href);
-    say('تم التحميل ✔ (جاهز تحطه في كاب كات)', 'ok');
-  } catch (e) {
-    console.error(e);
-    say('مقدرتش أجهّز الملف: ' + (e?.message || e?.error?.message || 'جرب تاني'), 'err');
-  } finally { $('dl').disabled = false; }
+$('dl').onclick = () => {
+  if (!wavUrl) return;
+  const a = document.createElement('a');
+  a.href = wavUrl; a.download = 'rabed-voiceover.wav'; a.click();
+  say('تم التحميل ✔ (جاهز تحطه في كاب كات)', 'ok');
 };
 </script>
 </body>
