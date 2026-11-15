@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>رابض - فويس أوفر لكل اللغات</title>
+<script src="https://js.puter.com/v2/"></script>
+<style>
+  :root{--bg:#0f1220;--card:#181c30;--line:#2a3050;--txt:#eef0fa;--mut:#9aa3c7;--acc:#6c8cff;--ok:#3ecf8e;--err:#ff6b6b}
+  @media (prefers-color-scheme:light){:root{--bg:#f4f6fc;--card:#fff;--line:#d9deef;--txt:#1b2038;--mut:#5b6486;--acc:#3556e8}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Tahoma,Arial,sans-serif;line-height:1.6}
+  main{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:1.6rem;margin:10px 0 4px}
+  p.sub{color:var(--mut);margin:0 0 18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 4px}
+  textarea,select,input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--txt);font:inherit}
+  select option{color:#000}
+  textarea{min-height:150px;resize:vertical}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tabs button{flex:1;min-width:150px;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--txt);cursor:pointer;font:inherit}
+  .tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:560px){.row{grid-template-columns:1fr}}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .actions button{padding:11px 18px;border-radius:10px;border:0;cursor:pointer;font:inherit;font-weight:600}
+  #play{background:var(--acc);color:#fff}
+  #stop,#dl{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  #msg{margin-top:12px;font-size:.9rem;color:var(--mut);min-height:1.4em}
+  #msg.err{color:var(--err)} #msg.ok{color:var(--ok)}
+  audio{width:100%;margin-top:12px}
+  .hint{font-size:.8rem;color:var(--mut);margin-top:6px}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>🎙️ رابض</h1>
+  <p class="sub">حوّل أي نص لصوت بأي لغة ولهجة. مجاني وبدون مفاتيح API ولا تسجيل.</p>
+
+  <div class="card">
+    <div class="tabs" id="tabs">
+      <button data-m="eleven" class="on">⭐ ElevenLabs (أعلى جودة، كل اللغات)</button>
+      <button data-m="ai">🤖 ذكاء اصطناعي (لهجات حقيقية)</button>
+      <button data-m="polly">🌍 ذكاء اصطناعي (لغات كتير)</button>
+      <button data-m="browser">🖥️ أصوات المتصفح</button>
+    </div>
+
+    <label for="text">النص</label>
+    <textarea id="text" placeholder="اكتب النص هنا بأي لغة...">أهلاً بيكم! ده تجربة فويس أوفر بصوت طبيعي وبلهجة مصرية.</textarea>
+
+    <!-- ElevenLabs -->
+    <div id="p-eleven">
+      <label for="elVoice">الصوت</label>
+      <select id="elVoice">
+        <option value="21m00Tcm4TlvDq8ikWAM">Rachel (أنثى، هادي)</option>
+        <option value="EXAVITQu4vr4xnSDxMzL">Bella (أنثى، ناعم)</option>
+        <option value="pNInz6obpgDQGcFmaJgB">Adam (ذكر، عميق)</option>
+        <option value="ErXwobaYiN019PkySvjV">Antoni (ذكر، دافي)</option>
+        <option value="TxGEqnHWrfWFTfGW9XjX">Josh (ذكر، شبابي)</option>
+      </select>
+      <p class="hint">اللغة بتتعرف تلقائيًا من النص: اكتب بالعربي المصري أو الإنجليزي أو أي لغة وهينطقها صح. كل صوت بيتكلم كل اللغات.</p>
+    </div>
+
+    <!-- AI / OpenAI voices with accent instruction -->
+    <div id="p-ai" class="hide">
+      <div class="row">
+        <div><label for="aiVoice">الصوت</label>
+          <select id="aiVoice">
+            <option value="alloy">Alloy</option><option value="ash">Ash</option>
+            <option value="coral" selected>Coral</option><option value="echo">Echo</option>
+            <option value="fable">Fable</option><option value="nova">Nova</option>
+            <option value="onyx">Onyx</option><option value="sage">Sage</option>
+            <option value="shimmer">Shimmer</option>
+          </select></div>
+        <div><label for="accent">اللهجة / اللغة المطلوبة</label>
+          <input id="accent" list="accents" value="Egyptian Arabic dialect">
+          <datalist id="accents">
+            <option value="Egyptian Arabic dialect"><option value="Saudi Arabic (Gulf) dialect">
+            <option value="Levantine Arabic dialect"><option value="Moroccan Arabic (Darija)">
+            <option value="Modern Standard Arabic (Fusha)"><option value="British English">
+            <option value="American English"><option value="Australian English">
+            <option value="Mexican Spanish"><option value="Castilian Spanish">
+            <option value="Parisian French"><option value="German"><option value="Turkish">
+            <option value="Hindi"><option value="Japanese"><option value="Korean"><option value="Mandarin Chinese">
+          </datalist></div>
+      </div>
+      <label for="style">الأسلوب (اختياري)</label>
+      <input id="style" placeholder="مثلاً: حماسي، هادي، إعلان، راوي قصة">
+      <p class="hint">النموذج بيفهم اللهجة من الوصف، فاكتب أي لهجة أو لغة بالإنجليزي.</p>
+    </div>
+
+    <!-- Polly -->
+    <div id="p-polly" class="hide">
+      <label for="lang">اللغة</label>
+      <select id="lang"></select>
+      <p class="hint">دي أصوات AWS Polly العصبية، ثابتة ومناسبة للغات كتير.</p>
+    </div>
+
+    <!-- Browser voices -->
+    <div id="p-browser" class="hide">
+      <label for="bvoice">الصوت (حسب جهازك)</label>
+      <select id="bvoice"></select>
+      <div class="row">
+        <div><label for="rate">السرعة</label><input type="range" id="rate" min="0.5" max="1.5" step="0.1" value="1"></div>
+        <div><label for="pitch">درجة الصوت</label><input type="range" id="pitch" min="0.5" max="1.5" step="0.1" value="1"></div>
+      </div>
+      <p class="hint">نصيحة: افتح الموقع من Microsoft Edge، فيه أصوات Natural مجانية بدقة عالية منها مصري (Salma / Shakir) ولغات كتير. التحميل مش متاح في الوضع ده.</p>
+    </div>
+
+    <div class="actions">
+      <button id="play">▶ تشغيل</button>
+      <button id="stop">⏹ إيقاف</button>
+      <button id="dl" disabled>⬇ تحميل MP3</button>
+    </div>
+    <div id="msg"></div>
+    <audio id="player" controls class="hide"></audio>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let mode = 'eleven', lastUrl = null;
+
+const POLLY = [
+  ['ar-AE','العربية (الإمارات)','Hala','neural'],['en-US','English (US)','Joanna','neural'],
+  ['en-GB','English (UK)','Amy','neural'],['fr-FR','Français','Lea','neural'],
+  ['de-DE','Deutsch','Vicki','neural'],['es-ES','Español (España)','Lucia','neural'],
+  ['es-US','Español (US)','Lupe','neural'],['it-IT','Italiano','Bianca','neural'],
+  ['pt-BR','Português (BR)','Camila','neural'],['tr-TR','Türkçe','Burcu','neural'],
+  ['hi-IN','हिन्दी','Kajal','neural'],['ja-JP','日本語','Takumi','neural'],
+  ['ko-KR','한국어','Seoyeon','neural'],['cmn-CN','中文','Zhiyu','neural'],
+  ['nl-NL','Nederlands','Laura','neural'],['sv-SE','Svenska','Elin','neural'],
+  ['pl-PL','Polski','Ola','neural'],['ru-RU','Русский','Tatyana','standard']
+];
+POLLY.forEach((l,i)=>$('lang').add(new Option(l[1],i)));
+
+function say(t,c=''){const m=$('msg');m.textContent=t;m.className=c}
+
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  mode=b.dataset.m;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  ['eleven','ai','polly','browser'].forEach(k=>$('p-'+k).classList.toggle('hide',k!==mode));
+  stop(); say('');
+});
+
+// Browser voices
+function loadVoices(){
+  const v=speechSynthesis.getVoices().slice().sort((a,b)=>a.lang.localeCompare(b.lang));
+  $('bvoice').innerHTML='';
+  v.forEach((x,i)=>$('bvoice').add(new Option(`${x.name} (${x.lang})`,i)));
+  const eg=v.findIndex(x=>x.lang==='ar-EG'); if(eg>=0)$('bvoice').value=eg;
+  $('bvoice')._v=v;
+}
+if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+
+function stop(){
+  try{speechSynthesis.cancel()}catch(e){}
+  const p=$('player');p.pause();
+}
+
+async function play(){
+  const text=$('text').value.trim();
+  if(!text){say('اكتب نص الأول','err');return}
+  stop(); $('dl').disabled=true; $('play').disabled=true;
+  try{
+    if(mode==='browser'){
+      const u=new SpeechSynthesisUtterance(text);
+      const v=$('bvoice')._v?.[$('bvoice').value];
+      if(v){u.voice=v;u.lang=v.lang}
+      u.rate=+$('rate').value;u.pitch=+$('pitch').value;
+      u.onend=()=>{say('خلص ✔','ok');$('play').disabled=false};
+      u.onerror=()=>{say('حصلت مشكلة في الصوت','err');$('play').disabled=false};
+      say('جاري التشغيل...');speechSynthesis.speak(u);return;
+    }
+    say('جاري توليد الصوت بالذكاء الاصطناعي... (أول مرة ممكن يطلب منك Puter تسجيل دخول مجاني)');
+    let opts;
+    if(mode==='eleven'){
+      opts={provider:'elevenlabs',model:'eleven_multilingual_v2',voice:$('elVoice').value};
+    }else if(mode==='ai'){
+      const acc=$('accent').value.trim()||'natural';
+      const st=$('style').value.trim();
+      opts={provider:'openai',model:'gpt-4o-mini-tts',voice:$('aiVoice').value,
+        instructions:`Speak the text in ${acc}, with authentic native pronunciation and natural intonation.${st?' Style: '+st+'.':''}`};
+    }else{
+      const l=POLLY[$('lang').value];
+      opts={provider:'aws-polly',language:l[0],voice:l[2],engine:l[3]};
+    }
+    const audio=await puter.ai.txt2speech(text,opts);
+    const p=$('player');p.src=audio.src;p.classList.remove('hide');
+    lastUrl=audio.src;$('dl').disabled=false;
+    await p.play();say('تم ✔','ok');
+  }catch(e){
+    console.error(e);
+    say('خطأ: '+(e?.message||e?.error?.message||JSON.stringify(e)),'err');
+  }finally{$('play').disabled=false}
+}
+
+async function download(){
+  if(!lastUrl)return;
+  try{
+    const b=await (await fetch(lastUrl)).blob();
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download='voiceover.mp3';a.click();URL.revokeObjectURL(a.href);
+  }catch(e){say('مقدرتش أحمّل الملف، جرب كليك يمين على المشغل واختار Save audio as','err')}
+}
+
+$('play').onclick=play;$('stop').onclick=()=>{stop();say('')};$('dl').onclick=download;
+</script>
+</body>
+</html>
