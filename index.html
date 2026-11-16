@@ -59,6 +59,16 @@
       </div>
     </div>
 
+    <div style="margin-top:12px">
+      <label for="style">الأسلوب</label>
+      <select id="style">
+        <option value="">طبيعي</option>
+        <option value="very enthusiastic and high-energy, not relaxed">حماسي 🔥</option>
+        <option value="calm, soft and soothing">هادي</option>
+        <option value="serious and confident, like a news presenter">رسمي / أخبار</option>
+      </select>
+    </div>
+
     <div class="btns">
       <button id="play">▶ حوّل لصوت</button>
       <button id="dl" disabled>⬇ تحميل</button>
@@ -161,7 +171,8 @@ $('play').onclick = async () => {
   if (!text) { say('اكتب نص الأول', 'err'); return; }
   $('play').disabled = true; $('dl').disabled = true; $('out').style.display = 'none';
   try {
-    const [, desc] = FLAT[$('dialect').value];
+    const [, baseDesc] = FLAT[$('dialect').value];
+    const desc = $('style').value ? `${baseDesc}, ${$('style').value}` : baseDesc;
     const parts = chunk(text);
     const pcms = [];
     for (let i = 0; i < parts.length; i++) {
