@@ -25,6 +25,8 @@
   button:disabled{opacity:.55;cursor:wait}
   #msg{text-align:center;margin-top:12px;font-size:.9rem;color:var(--mut);min-height:1.4em}
   #msg.err{color:var(--err)} #msg.ok{color:var(--ok)}
+  #dur{font-size:.82rem;color:var(--mut);margin-top:6px}
+  #dur.warn{color:var(--err)}
   #out{display:none;margin-top:14px}
   audio{width:100%}
 </style>
@@ -36,6 +38,7 @@
 
   <div class="card">
     <textarea id="text" placeholder="اكتب النص هنا...">هلا والله ومرحبا فيكم! كيف حالكم يا جماعة؟ اليوم بشرح لكم شي بسيط وحلو، بس ركزوا معي زين.</textarea>
+    <div id="dur">المدة التقريبية: —</div>
 
     <div class="row">
       <div>
@@ -89,7 +92,8 @@ const LANGS = [
   ['عربي', [
     ['مصري', 'Egyptian Arabic dialect'],
     ['سعودي', 'Saudi Arabic dialect (Najdi/Hejazi, Saudi Arabia)'],
-    ['خليجي', 'Gulf Arabic dialect (Emirati/Kuwaiti/Qatari)'],
+    ['كويتي', 'Kuwaiti Arabic dialect (Kuwait City, Gulf accent)'],
+    ['خليجي', 'Gulf Arabic dialect (Emirati/Qatari/Bahraini)'],
     ['شامي', 'Levantine Arabic dialect (Syrian/Lebanese/Palestinian/Jordanian)'],
     ['عراقي', 'Iraqi Arabic dialect'],
     ['يمني', 'Yemeni Arabic dialect'],
@@ -124,8 +128,20 @@ LANGS.forEach(([g, items]) => {
   $('dialect').appendChild(og);
 });
 
-// تقسيم النص الطويل لأجزاء على حدود الجمل
-function chunk(text, max = 900) {
+// عدّاد المدة: الكلام العربي بيطلع تقريبًا 15 حرف في الثانية
+const TARGET_SEC = 30;
+function updateDuration() {
+  const n = $('text').value.trim().length;
+  const sec = Math.round(n / 15);
+  const d = $('dur');
+  d.textContent = n ? `المدة التقريبية: ${sec} ثانية (${n} حرف) — الهدف ${TARGET_SEC} ثانية` : 'المدة التقريبية: —';
+  d.className = sec > TARGET_SEC + 5 ? 'warn' : '';
+}
+$('text').addEventListener('input', updateDuration);
+updateDuration();
+
+// تقسيم النص الطويل لأجزاء على حدود الجمل (الحد 1100 حرف عشان 30 ثانية تتعمل في طلب واحد وتوفّر الحصة)
+function chunk(text, max = 1100) {
   const sentences = text.match(/[^.!؟?،,\n]+[.!؟?،,\n]*/g) || [text];
   const out = []; let cur = '';
   for (const s of sentences) {
